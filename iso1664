@@ -1,0 +1,108 @@
+// On prend le pistolet
+if (getTurn() == 1 && getWeapon() != WEAPON_SHOTGUN) {
+    setWeapon(WEAPON_SHOTGUN)
+} // Attention : coûte 1 PT
+
+// On récupère l'ennemi le plus proche
+var enemy = null
+for( var currentEnemy in getEnemies()) {
+	if(getType(currentEnemy) == ENTITY_LEEK) {
+		enemy = currentEnemy
+		break
+	}
+}
+debug(enemy)
+
+// recuperation de l'arme enemy
+var enemyWeapon = getWeapon(enemy);
+var enemyWeaponArea = getWeaponArea(enemyWeapon);
+var enemyWeaponMaxRange = getWeaponMaxRange(enemyWeapon)
+
+debug("enemyWeapon :" + enemyWeapon)
+debug("enemyWeaponArea :" + enemyWeaponArea)
+debug("enemyWeaponMaxRange :" + enemyWeaponMaxRange)
+
+// 1. Santé
+// Récupère de la santé si elle est <= 40%
+if ((getLife() < getTotalLife() * 0.4)) {
+	useChip(CHIP_BANDAGE)
+}
+
+// 2. Est-ce que l'ennemie est proche ?
+// Calcul de la porté = portée d el'arme ennemie * 2 tours + 4 mouvement de l'ennemie
+var portee = enemyWeaponMaxRange + (getMP(enemy) * 2)
+var ennemyPosition = getCell(enemy)
+var myPosition = getCell()
+
+if (canUseWeapon(WEAPON_SHOTGUN, enemy)) {
+	if (getWeapon() != WEAPON_SHOTGUN) {
+		setWeapon(WEAPON_SHOTGUN)
+	}
+	while(useWeapon(enemy) > 0){	}
+} else if (canUseWeapon(WEAPON_PISTOL, enemy)) {
+	setWeapon(WEAPON_PISTOL)
+	while(useWeapon(enemy) > 0){}
+}
+
+// Se déplacer tant qu'on ne peut pas utiliser l'arme et que l'on peut se déplacer
+while(isAlive(enemy) && !canUseWeapon(enemy) && getMP() > 0){
+	moveToward(enemy,1)
+}
+
+// On essaye de tirer sur l'ennemi !
+while(useWeapon(enemy) > 0){}
+
+while(getMP()>0){
+	
+	debug(getMP());
+	var hasMoved = false;
+	var leekCell = getCell();
+	debug(leekCell);
+	var enemyCell = getCell(enemy);
+
+	var cellx = getCellX(leekCell);
+	var celly = getCellY(leekCell);
+
+	var cellN = getCellFromXY(cellx, celly+1);
+	var cellS = getCellFromXY(cellx, celly-1);
+	var cellO = getCellFromXY(cellx+1, celly);
+	var cellE = getCellFromXY(cellx-1, celly);
+
+	var cells = [cellN, cellS, cellO, cellE];
+
+	for(var cell in cells){
+		if(isEmptyCell(cell) && !lineOfSight(cell, enemyCell)){
+			debug(cell);
+			moveTowardCell(cell);
+			hasMoved = true;
+			debug('move');
+			break;
+		}
+	}
+
+	if(!hasMoved){
+		debug('move away');
+	 	moveAwayFrom(enemy,1);
+	}
+}
+
+var chipsAttacks = [
+	CHIP_ROCK, CHIP_ICE, CHIP_SPARK
+];
+
+if (getPathLength(myPosition, ennemyPosition) <= portee) {
+	useChip(CHIP_HELMET)
+	useChip(CHIP_PROTEIN)
+}
+
+for(var chipAtck in chipsAttacks){
+	if(canUseChip(chipAtck, enemy) && getChipCost(chipAtck) < getTP()){
+		useChip(chipAtck, enemy);
+	}
+}
+
+if (getTP()>0) {
+	say('Montjoie, Saint Denis !')
+}
+
+debug(getTP())
